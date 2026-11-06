@@ -1,14 +1,4 @@
-"""Командная строка: померить, посмотреть, закрыть, открыть.
-
-Окно удобнее, но командную строку видно насквозь -- а программа, которая
-правит брандмауэр, обязана быть видна насквозь. Здесь каждая команда
-печатает, что именно она сделает, и `block` без `--yes` ничего не делает
-вовсе: только показывает список.
-
-`--json` есть у каждой команды, которая что-то узнаёт. Это не украшение:
-кто-то захочет вставить замер в свой скрипт, и пусть он разбирает JSON, а
-не нашу табличку.
-"""
+"""Командная строка: померить, посмотреть, закрыть, открыть."""
 from __future__ import annotations
 
 import argparse
@@ -20,8 +10,6 @@ from . import blocklist, relays
 from .elevate import relaunch_as_admin, running_as_admin
 from .words import plural, servers
 
-# Цвет только в настоящем терминале и только по просьбе. Перенаправленный
-# вывод с escape-последовательностями читать нечем, а в файле они мусор.
 ЦВЕТА = {
     "хорошо": "\033[92m",
     "терпимо": "\033[93m",
@@ -50,7 +38,7 @@ def _замерить(args) -> list[relays.Ping]:
               "ещё раз.", file=sys.stderr)
         return []
     if not args.json:
-        print(f"Спрашиваю {servers(len(где))}, это секунд десять…",
+        print(f"Идёт опрос — {servers(len(где))}, это секунд десять…",
               file=sys.stderr)
     return relays.measure(где)
 
@@ -79,7 +67,6 @@ def _как_json(pings, закрытые) -> None:
         for p in pings], ensure_ascii=False, indent=2))
 
 
-# ------------------------------------------------------------- команды
 def команда_ping(args) -> int:
     pings = _замерить(args)
     if not pings:
@@ -106,7 +93,8 @@ def команда_status(args) -> int:
                          ensure_ascii=False, indent=2))
         return 0
     if not закрытые:
-        print("Ничего не закрыто — моих правил в брандмауэре нет.")
+        print("Ничего не закрыто — правил этой программы в брандмауэре "
+              "нет.")
     else:
         print(f"Закрыто: {servers(len(закрытые))} — "
               f"{', '.join(sorted(закрытые))}.")
@@ -132,8 +120,9 @@ def команда_block(args) -> int:
 
     имена = {c.code: c.name for c in среди}
     осталось = len(среди) - len(выбор)
-    это = plural(len(выбор), "вот этот", "вот эти", "вот эти")
-    print(f"\nЗакрою {это}:")
+    это = plural(len(выбор), "Закрывается вот этот",
+                 "Закрываются вот эти", "Закрываются вот эти")
+    print(f"\n{это}:")
     for code in sorted(выбор):
         print(f"  {code:<6} {имена[code]}")
     print(f"Открытым останется {servers(осталось)}. Чем больше "
@@ -148,7 +137,7 @@ def команда_block(args) -> int:
         if отказ:
             print(отказ, file=sys.stderr)
             return 3
-        print("Открыл второе окно с правами — продолжай в нём.")
+        print("Открылось второе окно с правами — продолжай в нём.")
         return 0
 
     отказ = blocklist.apply(выбор, среди,
@@ -156,7 +145,8 @@ def команда_block(args) -> int:
     if отказ:
         print(отказ, file=sys.stderr)
         return 3
-    print(f"\nГотово, закрыл {servers(len(выбор))}. Перезапусти поиск "
+    стало = plural(len(выбор), "закрыт", "закрыто", "закрыто")
+    print(f"\nГотово, {стало} {servers(len(выбор))}. Перезапусти поиск "
           f"матча, чтобы игра замерила заново.")
     return 0
 
@@ -169,30 +159,29 @@ def команда_unblock(args) -> int:
         if отказ:
             print(отказ, file=sys.stderr)
             return 3
-        print("Открыл второе окно с правами — продолжай в нём.")
+        print("Открылось второе окно с правами — продолжай в нём.")
         return 0
     отказ = blocklist.clear()
     if отказ:
         print(отказ, file=sys.stderr)
         return 3
-    print("Открыл всё обратно. Убрал только свои правила — то, что ты "
-          "настраивал в брандмауэре раньше, на месте.")
+    print("Всё открыто обратно. Убраны только правила этой программы — "
+          "то, что настраивалось в брандмауэре раньше, на месте.")
     return 0
 
 
 def команда_gui(_args) -> int:
-    from .gui import run  # noqa: PLC0415 - tkinter грузится только для окна
+    from .gui import run
 
     return run()
 
 
-# --------------------------------------------------------------- разбор
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
         prog="deadlock-lobby-fix",
         description="Показывает, за сколько ты дозваниваешься до "
                     "серверов Valve, и даёт закрыть те, где играть не "
-                    "хочешь. Без команды открывает окно.")
+                    "хочешь. Без команды открывается окно.")
     ap.add_argument("--debug", action="store_true",
                     help="рассказывать, что происходит внутри")
     дальше = ap.add_subparsers(dest="command")
@@ -237,7 +226,5 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.DEBUG if args.debug else logging.WARNING,
         format="%(levelname)s %(name)s: %(message)s")
     if getattr(args, "func", None) is None:
-        # Без команды -- окно: тот, кто запустил двойным щелчком, команду
-        # не вводил и вводить не собирался.
         return команда_gui(args)
     return args.func(args)

@@ -1,12 +1,4 @@
-"""Закрытие кластеров брандмауэром.
-
-Опасность здесь не в блокировке, а в переборе: закрыв слишком много,
-человек не найдёт матч вовсе, и выглядеть это будет как «программа сломала
-игру». Поэтому предохранители проверяются подробнее, чем сама работа.
-
-Ни один тест не трогает настоящий брандмауэр: вместо запуска команд
-подставляется запись того, что было бы запущено.
-"""
+"""Закрытие кластеров брандмауэром."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -26,7 +18,6 @@ class Узел:
 
 class Запись:
     """Запоминает команды вместо того, чтобы их выполнять."""
-
     def __init__(self, admin=True, answers=None):
         self.команды = []
         self.admin = admin
@@ -42,7 +33,6 @@ class Запись:
         return ""
 
 
-# ------------------------------------------------------- предохранители
 def test_the_nearest_cluster_cannot_be_closed():
     беда = blocklist.check({"ams"}, ВСЕ, nearest="ams")
     assert "Ближайший сервер закрывать нельзя" in беда
@@ -82,7 +72,6 @@ def test_the_guard_runs_before_anything_is_changed():
     assert беда and запись.команды == []
 
 
-# ------------------------------------------------------------- права
 def test_without_admin_rights_nothing_is_attempted():
     запись = Запись(admin=False)
     беда = blocklist.apply({"syd"}, ВСЕ, nearest="ams", run=запись)
@@ -90,7 +79,6 @@ def test_without_admin_rights_nothing_is_attempted():
     assert not any("New-NetFirewallRule" in c for c in запись.команды)
 
 
-# ------------------------------------------------------------- работа
 def test_both_directions_are_closed():
     """Одного направления мало: ответ может прийти по открытому пути."""
     запись = Запись()
@@ -138,7 +126,6 @@ def test_a_broken_powershell_is_reported_not_raised():
     assert "не снялись" in беда and "powershell не найден" in беда
 
 
-# ------------------------------------------------------------ чтение
 def test_what_is_closed_is_read_back():
     запись = Запись(answers={"Get-NetFirewallRule":
                              '["DeadlockLobbyFix-relay-Outbound-syd",'

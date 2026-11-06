@@ -24,19 +24,19 @@ There is no "Europe only" switch anywhere — not in the settings, not in the
 interface strings. `Citadel_Region_*` labels leaderboards;
 `Citadel_PrivateLobby_Region_Unselected` is about private lobbies.
 
-So the honest thing a tool can do is two things:
+So there are two honest things a tool can do here:
 
-1. **Show you the same numbers matchmaking sees.** Your real ping to each
+1. **Show the same numbers matchmaking sees.** Your real ping to each
    cluster. This answers "why do I keep getting thrown to Virginia" far better
    than any forum thread — and it also separates two problems that look
    identical from the inside. If your neighbour gets 70 ms to Stockholm and you
    get 140 ms, that is your ISP's routing, and routing can be fixed. Without a
    measurement you cannot tell that apart from "the game is bad".
 
-2. **Let you close the clusters you do not want.** What the client cannot reach
-   does not exist for matchmaking, so it will not send you there.
+2. **Close the clusters you do not want.** What the client cannot reach does
+   not exist for matchmaking, so it will not send you there.
 
-On the machine this was built on the nearest relay is 68 ms (Stockholm). Valve
+On the machine this was measured on the nearest relay is 68 ms (Stockholm). Valve
 has **no clusters in Russia at all**, which explains the complaint better than
 any advice: even the best case is far, and when the European queue has nobody
 to match you with, matchmaking widens the search — 180 ms to Virginia looks
@@ -71,11 +71,11 @@ python -m deadlock_lobby_fix ping --json  # same, for scripts
 python -m deadlock_lobby_fix status       # what is currently closed
 python -m deadlock_lobby_fix block syd tyo        # preview — changes nothing
 python -m deadlock_lobby_fix block syd tyo --yes  # actually close them
-python -m deadlock_lobby_fix unblock      # remove every rule we made
+python -m deadlock_lobby_fix unblock      # open everything back up
 ```
 
-`block` without `--yes` is a preview and touches nothing. A program that edits
-firewall rules has to show its work first.
+`block` without `--yes` is a preview and touches nothing: a program that edits
+firewall rules shows its work first.
 
 Closing needs administrator rights. The window has a button that asks for them
 through UAC; the CLI asks by itself when it needs to.
@@ -92,10 +92,10 @@ get if you close everything. Three guards, and they cannot be overridden:
 - **the check runs before the first command** — a refusal halfway through would
   leave half the rules in place.
 
-Every rule we create is named `DeadlockLobbyFix-relay-*`, and the "open
-everything back" button removes exactly those. Your own firewall rules are
-never touched and never even listed: you may have configured that machine long
-before you met this program.
+Every rule the program creates is named `DeadlockLobbyFix-relay-*`, and the
+"open everything back" button removes exactly those. Rules put there by
+anything else are never touched and never even listed: that machine may have
+been configured long before this program showed up.
 
 **The more you close, the longer matchmaking takes.** That is the price, not a
 bug.
@@ -111,10 +111,10 @@ The cluster list comes from Valve, for this exact game:
 https://api.steampowered.com/ISteamApps/GetSDRConfig/v1/?appid=1422450
 ```
 
-Thirty-seven clusters, thirty-three with addresses and human names. We keep no
-list of our own — it would go stale on the first new datacentre. The window
-calls them "servers", because that is the word a player has in their head;
-the codes (`sto`, `syd`, `gru`) are Valve's cluster codes either way.
+Thirty-seven clusters, thirty-three with addresses and human names. No list is
+kept here — it would go stale on the first new datacentre. The window calls
+them "servers", because that is the word a player has in their head; the codes
+(`sto`, `syd`, `gru`) are Valve's cluster codes either way.
 
 Ping is measured with PowerShell's `Test-Connection`, not `ping.exe`. The
 output of `ping.exe` is translated into the system language, and parsing
@@ -128,15 +128,15 @@ enough — the reply can arrive over a path that is still open.
 
 ## What it does not do
 
-It does not touch the game: not its code, not its memory, not its files. It
-does not send the game any input. It is a network setting on your own machine,
-the same thing the long-standing "server pickers" for CS and Dota do.
+The game is not touched: not its code, not its memory, not its files, and no
+input is ever sent to it. What happens is a network setting on your own
+machine, the same thing the long-standing "server pickers" for CS and Dota do.
 
 ## If you also use Deadlock Coach
 
 Deadlock Coach has the same feature built in, and marks its rules
-`DeadlockCoach-relay-*`. Each program only removes its own rules, so use one or
-the other — otherwise clearing the rules in one will leave the other's standing.
+`DeadlockCoach-relay-*`. Each program removes only its own rules, so use one or
+the other — otherwise clearing the rules in one leaves the other's standing.
 
 ## License
 
@@ -166,18 +166,18 @@ Citadel_StartMatchmaking_NoRegionPings
 пришлось в файлах игры: вики отдаёт заглушку, Reddit не пускает, форум забит
 спамом с инвайтами.
 
-Значит, честного тут два дела:
+Честного тут два дела.
 
-1. **Показать те же числа, что видит матчмейкер.** Свой настоящий пинг до
+1. **Показать те же числа, что видит матчмейкер.** Настоящий пинг до
    каждого кластера. По нему видно не только, почему кидает в Вирджинию, но и
    кое-что поважнее: если у одного семьдесят миллисекунд до Стокгольма, а у
    другого сто сорок — у второго беда у провайдера, и она чинится. Без замера
    это не отличить от «игра плохая».
 
-2. **Дать закрыть ненужные кластеры.** До чего клиент не достучался, того для
+2. **Закрыть ненужные кластеры.** До чего клиент не достучался, того для
    матчмейкера не существует, и туда он не отправит.
 
-На машине, где это писалось, ближайший релей — 68 мс, Стокгольм. Российских
+На машине, где это мерялось, ближайший релей — 68 мс, Стокгольм. Российских
 кластеров у Valve **нет вовсе**, и это объясняет жалобу лучше любого совета:
 даже лучший случай далёк, а когда в европейской очереди некого подобрать,
 матчмейкер расширяет поиск — и 180 мс до Вирджинии выглядят для него приемлемой
@@ -208,11 +208,11 @@ python -m deadlock_lobby_fix ping --json  # то же, для скриптов
 python -m deadlock_lobby_fix status       # что закрыто сейчас
 python -m deadlock_lobby_fix block syd tyo        # предпросмотр, ничего не меняет
 python -m deadlock_lobby_fix block syd tyo --yes  # закрыть на самом деле
-python -m deadlock_lobby_fix unblock      # снять всё, что мы поставили
+python -m deadlock_lobby_fix unblock      # открыть всё обратно
 ```
 
-`block` без `--yes` — предпросмотр и не трогает ничего. Программа, которая
-правит правила брандмауэра, обязана сначала показать, что собирается сделать.
+`block` без `--yes` — предпросмотр, и не трогает ничего: программа, которая
+правит брандмауэр, сначала показывает, что собирается сделать.
 
 Закрытие требует прав администратора. В окне есть кнопка, которая просит их
 через UAC; командная строка просит сама, когда они понадобятся.
@@ -229,9 +229,9 @@ Steam Datagram Relay» — именно это получится, если за
 - **проверка идёт до первой команды** — отказ на середине оставил бы половину
   правил поставленными.
 
-Все наши правила называются `DeadlockLobbyFix-relay-*`, и «снять всё» снимает ровно
-их. Чужие правила брандмауэра не трогаются и даже не перечисляются: человек мог
-настроить свою машину задолго до знакомства с этой программой.
+Все созданные правила называются `DeadlockLobbyFix-relay-*`, и «Открыть всё
+обратно» снимает ровно их. Поставленное не этой программой не трогается и даже
+не перечисляется: машина могла быть настроена задолго до знакомства с ней.
 
 **Чем больше закрыто, тем дольше ищется матч.** Это цена, а не поломка.
 
@@ -247,7 +247,7 @@ https://api.steampowered.com/ISteamApps/GetSDRConfig/v1/?appid=1422450
 ```
 
 Тридцать семь кластеров, тридцать три с адресами и человеческими именами. Свой
-список мы не ведём — он протухнет на первом же новом датацентре. В окне они
+список не ведётся — он протухнет на первом же новом датацентре. В окне они
 названы серверами: это слово, которое у игрока в голове, а коды (`sto`, `syd`,
 `gru`) всё равно кластерные, валвовские.
 
@@ -262,15 +262,15 @@ https://api.steampowered.com/ISteamApps/GetSDRConfig/v1/?appid=1422450
 
 ## Чего программа не делает
 
-Она не трогает игру — ни кода, ни памяти, ни файлов, и не шлёт ей никакого
-ввода. Это настройка сети на своей машине, ровно то же, чем давно живут
+Игра не трогается — ни код, ни память, ни файлы, и никакого ввода ей не
+шлётся. Меняется настройка сети на своей машине, ровно то же, чем давно живут
 «пикеры серверов» для CS и Dota.
 
 ## Если ты пользуешься Deadlock Coach
 
 В Deadlock Coach есть то же самое, и его правила помечены
 `DeadlockCoach-relay-*`. Каждая программа снимает только свои правила, так что
-пользуйся чем-то одним — иначе «снять всё» в одной оставит правила другой
+пользоваться стоит чем-то одним — иначе снятие в одной оставит правила другой
 висеть.
 
 ## Лицензия

@@ -1,13 +1,4 @@
-"""Командная строка.
-
-Здесь проверяется одно главное свойство: `block` без `--yes` не трогает
-брандмауэр. Программа, которая правит правила сети, обязана сначала
-показать, что собирается сделать, -- иначе человек узнаёт о своём выборе
-по тому, что перестал находить матчи.
-
-И второе: отказ предохранителя должен случиться до первой команды и дать
-ненулевой код возврата, чтобы скрипт мог на него опереться.
-"""
+"""Командная строка."""
 from __future__ import annotations
 
 import json
@@ -29,7 +20,6 @@ def мир(monkeypatch):
     """Сеть, PowerShell и брандмауэр -- все подставные."""
     поставлено = {"правила": [], "снято": 0, "admin": True}
 
-    # Список берём до подмены: подменённая `clusters` звала бы саму себя.
     готовые = relays.clusters(fetch=lambda: КОНФИГ)
     monkeypatch.setattr(relays, "clusters", lambda fetch=None: готовые)
     monkeypatch.setattr(
@@ -52,7 +42,6 @@ def мир(monkeypatch):
     return поставлено
 
 
-# ------------------------------------------------------------ замер
 def test_ping_prints_every_cluster(мир, capsys):
     assert cli.main(["ping"]) == 0
     напечатано = capsys.readouterr().out
@@ -75,7 +64,6 @@ def test_no_network_is_an_error_code(monkeypatch, capsys):
     assert cli.main(["ping"]) == 1
 
 
-# ------------------------------------------------------------ закрытие
 def test_block_without_yes_changes_nothing(мир, capsys):
     """Предпросмотр -- это предпросмотр."""
     assert cli.main(["block", "syd", "tyo"]) == 0
@@ -110,14 +98,13 @@ def test_an_unknown_code_is_refused(мир, capsys):
 
 
 def test_without_admin_nothing_is_written(мир, monkeypatch, capsys):
-    """Запрос прав вместо тихого отказа -- и правил при этом не ставим."""
+    """Запрос прав вместо тихого отказа, и правил при этом не ставится."""
     мир["admin"] = False
     monkeypatch.setattr(cli, "relaunch_as_admin", lambda *a, **k: "")
     assert cli.main(["block", "syd", "--yes"]) == 0
     assert мир["правила"] == []
 
 
-# ------------------------------------------------------------ снятие
 def test_unblock_clears_the_rules(мир):
     assert cli.main(["unblock"]) == 0
     assert мир["снято"] == 1
@@ -130,7 +117,6 @@ def test_unblock_without_admin_asks_instead_of_failing(мир, monkeypatch):
     assert мир["снято"] == 0
 
 
-# ------------------------------------------------------------ состояние
 def test_status_says_what_is_closed(мир, monkeypatch, capsys):
     monkeypatch.setattr(blocklist, "blocked", lambda run=None: {"syd", "tyo"})
     assert cli.main(["status"]) == 0
@@ -145,7 +131,6 @@ def test_status_as_json(мир, monkeypatch, capsys):
     assert разобрано["blocked"] == ["syd"]
 
 
-# -------------------------------------------------------------- разбор
 def test_no_command_opens_the_window(monkeypatch):
     """Запустивший двойным щелчком команду не вводил."""
     открыто = []
@@ -162,13 +147,8 @@ def test_every_command_is_listed_in_help(capsys):
         assert команда in текст
 
 
-# --------------------------------------------------- как это читается
 def test_counts_agree_with_their_nouns(мир, capsys):
-    """«Закрою 1 серверов» -- первое, по чему видно машину.
-
-    Проверяется на числе, которое ломает наивное правило «по последней
-    цифре»: у 1 форма «сервер», и строка обязана это знать.
-    """
+    """«Закрою 1 серверов» -- первое, по чему видно машину."""
     cli.main(["block", "syd", "--yes"])
     напечатано = capsys.readouterr().out
     assert "один сервер" in напечатано
@@ -181,14 +161,8 @@ def test_counts_are_spelled_out_while_they_are_small(мир, capsys):
 
 
 def test_a_refusal_is_a_whole_sentence(мир, capsys):
-    """Отказ печатается целой фразой, без служебной приставки.
-
-    Иначе человек читает «Так нельзя: Ближайший сервер закрывать
-    нельзя» -- одно и то же дважды, и вторая половина звучит как
-    сообщение системы, а не как ответ.
-    """
+    """Отказ печатается целой фразой, без служебной приставки."""
     cli.main(["block", "ams", "--yes"])
-    # Первая строка stderr -- про замер; отказ идёт последним.
     отказ = capsys.readouterr().err.strip().splitlines()[-1]
     assert отказ.startswith("Ближайший сервер")
     assert отказ.endswith(".")

@@ -1,13 +1,4 @@
-"""Пинг до релеев Valve.
-
-Главное свойство этого расчёта -- он не выдаёт молчание за ноль. Узел, не
-ответивший на запрос, это «неизвестно», а не «нулевая задержка», и если
-спутать одно с другим, он встанет первым в списке ближайших -- то есть
-программа посоветует играть там, куда вообще не достучалась.
-
-Ни один тест не стучит в сеть: вместо `urllib` подставляется готовый
-ответ, вместо PowerShell -- функция, возвращающая строку.
-"""
+"""Пинг до релеев Valve."""
 from __future__ import annotations
 
 from deadlock_lobby_fix import relays
@@ -20,7 +11,6 @@ from deadlock_lobby_fix import relays
 }}
 
 
-# --------------------------------------------------------- список Valve
 def test_clusters_come_with_names_and_addresses():
     got = relays.clusters(fetch=lambda: КОНФИГ)
     assert [c.code for c in got] == ["ams", "syd"]
@@ -47,7 +37,6 @@ def test_a_changed_format_is_not_a_crash():
     assert relays.clusters(fetch=lambda: {"pops": None}) == []
 
 
-# ---------------------------------------------------------------- замер
 def test_the_nearest_comes_first():
     got = _замер({"1.1.1.1": "80", "2.2.2.2": "290"})
     assert [p.cluster.code for p in got] == ["ams", "syd"]
@@ -87,8 +76,7 @@ def test_nothing_to_measure_is_not_an_error():
 
 
 def test_only_the_first_address_is_asked():
-    """Релеи одного кластера стоят в одной стойке: второй адрес ничего не
-    добавит, а время замера удвоит."""
+    """Релеи одного кластера стоят в одной стойке: второй адрес ничего не"""
     спрошено = []
     relays.measure(relays.clusters(fetch=lambda: КОНФИГ),
                    run=lambda cmd: спрошено.append(cmd) or "50")
@@ -105,7 +93,6 @@ def test_progress_is_reported():
     assert шаги == [(1, 2), (2, 2)]
 
 
-# -------------------------------------------------------------- вердикт
 def test_the_verdict_matches_the_number():
     ams, syd = relays.clusters(fetch=lambda: КОНФИГ)
     assert relays.Ping(ams, 40).good
@@ -115,8 +102,7 @@ def test_the_verdict_matches_the_number():
 
 
 def test_silence_is_its_own_verdict():
-    """«Молчит» -- это не «плохо»: неизвестность, а не плохой пинг. Иначе
-    раскраска соврёт, что узел измерен и оказался далёким."""
+    """«Молчит» -- это не «плохо»: неизвестность, а не плохой пинг. Иначе"""
     ams = relays.clusters(fetch=lambda: КОНФИГ)[0]
     assert relays.Ping(ams, None).verdict == "молчит"
     assert relays.Ping(ams, 300).verdict == "плохо"
@@ -131,7 +117,6 @@ def test_all_four_verdicts_differ():
     assert len(слова) == 4
 
 
-# ------------------------------------------------------------- ближайший
 def test_the_nearest_skips_the_silent():
     ams, syd = relays.clusters(fetch=lambda: КОНФИГ)
     найден = relays.nearest([relays.Ping(ams, None), relays.Ping(syd, 200)])
@@ -144,7 +129,6 @@ def test_without_answers_there_is_no_nearest():
     assert relays.nearest([relays.Ping(ams, None)]) is None
 
 
-# --------------------------------------------------------------- помощь
 def _замер(ответы: dict):
     return relays.measure(
         relays.clusters(fetch=lambda: КОНФИГ),

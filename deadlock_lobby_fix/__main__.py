@@ -1,8 +1,4 @@
-"""Точка входа: `python -m deadlock_lobby_fix`.
-
-Без команды открывается окно -- тот, кто запустил двойным щелчком, команду
-не вводил и вводить не собирался.
-"""
+"""Точка входа: `python -m deadlock_lobby_fix`."""
 from __future__ import annotations
 
 import sys
