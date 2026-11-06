@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deadlock-lobby-fix"
+version = "1.0.0"
+description = "Ping every Valve relay Deadlock matchmaking uses, and close the ones you do not want"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+keywords = ["deadlock", "steam", "sdr", "ping", "matchmaking", "latency"]
+classifiers = [
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Topic :: Games/Entertainment",
+    "Topic :: System :: Networking",
+]
+
+# Зависимостей нет и быть не должно. Эту программу советуют друг другу в
+# чате, и каждое лишнее колесо -- ещё один способ до неё не добраться.
+# Окно на tkinter, он идёт в самом Python; запросы через urllib; пинг и
+# брандмауэр через PowerShell, который на Windows уже стоит.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/DieForGlory/deadlock_lobby_fix"
+Issues = "https://github.com/DieForGlory/deadlock_lobby_fix/issues"
+
+[project.scripts]
+deadlock-lobby-fix = "deadlock_lobby_fix.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[tool.setuptools]
+packages = ["deadlock_lobby_fix"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
