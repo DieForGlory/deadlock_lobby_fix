@@ -1,4 +1,4 @@
-"""Окно: таблица пинга и галки «здесь не играть»."""
+"""Окно: таблица пинга и галки «играть здесь»."""
 from __future__ import annotations
 
 import logging
@@ -7,7 +7,7 @@ import tkinter as tk
 
 from . import blocklist, relays
 from .elevate import relaunch_as_admin, running_as_admin
-from .words import plural, servers
+from .words import plural, servers, spelled
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class Окно:
         ряд = tk.Frame(self.root, bg=ФОН)
         ряд.pack(fill="x", padx=16)
         self.кнопка_замера = self._кнопка(ряд, "Замерить пинг", self.замерить)
-        self.кнопка_применить = self._кнопка(ряд, "Закрыть отмеченные",
+        self.кнопка_применить = self._кнопка(ряд, "Зафиксировать выбранные",
                                              self.применить)
         self.кнопка_снять = self._кнопка(ряд, "Открыть всё обратно",
                                          self.снять)
@@ -86,6 +86,30 @@ class Окно:
             text="Нажми «Замерить пинг». Займёт секунд десять — "
                  "опрашиваются все сразу.")
         self.состояние.pack(fill="x", padx=16, pady=(10, 6))
+
+        ряд = tk.Frame(self.root, bg=ФОН)
+        ряд.pack(fill="x", padx=16, pady=(0, 4))
+        self.кнопки_отметок = [
+            self._ссылка(ряд, "Отметить все", lambda: self._отметить(True)),
+            self._ссылка(ряд, "Снять все", lambda: self._отметить(False)),
+        ]
+
+    def _ссылка(self, где, текст, действие) -> tk.Button:
+        """Мелкая кнопка-ссылка для быстрых отметок."""
+        кнопка = tk.Button(где, text=текст, command=действие, bg=ФОН,
+                           fg=ТУСКЛО, activebackground=ФОН,
+                           activeforeground=ТЕКСТ, relief="flat", padx=0,
+                           pady=0, font=("Segoe UI", 9, "underline"),
+                           cursor="hand2", borderwidth=0,
+                           disabledforeground=ПАНЕЛЬ, state="disabled")
+        кнопка.pack(side="left", padx=(0, 14))
+        return кнопка
+
+    def _отметить(self, играть: bool) -> None:
+        """Отметить все или снять все. Ближний отмечен всегда."""
+        ближний = self.ближний
+        for code, держит in self.галки.items():
+            держит.set(играть or code == ближний)
 
     def _список(self) -> None:
         """Прокручиваемый список кластеров: холст с рамкой внутри."""
@@ -131,7 +155,7 @@ class Окно:
             "поломка. Ближайший сервер закрыть нельзя, и хотя бы пять "
             "должны остаться открытыми, иначе матч не найдётся вовсе.",
             "Список серверов Valve меняет. Новый датацентр будет открыт, "
-            "пока не замеришь и не закроешь его заново.",
+            "пока не замеришь и не зафиксируешь выбор заново.",
         ):
             tk.Label(self.root, text=текст, bg=ФОН, fg=ТУСКЛО,
                      justify="left", anchor="w", wraplength=640,
@@ -192,9 +216,12 @@ class Окно:
                          "связь перекрыта целиком — загляни в брандмауэр.")
             return
         self.сказать(f"Ближе всего {ближний.cluster.name} — "
-                     f"{ближний.ms:.0f} мс. Отметь, где играть не хочешь, "
-                     f"и жми «Закрыть отмеченные».")
+                     f"{ближний.ms:.0f} мс. Отметь, где хочешь играть, "
+                     f"и жми «Зафиксировать выбранные» — остальные "
+                     f"закроются.")
         self.кнопка_применить.configure(state="normal")
+        for кнопка in self.кнопки_отметок:
+            кнопка.configure(state="normal")
 
     def _нарисовать(self, закрытые: set[str]) -> None:
         for виджет in self.строки.winfo_children():
@@ -205,7 +232,9 @@ class Окно:
             строка = tk.Frame(self.строки, bg=ПАНЕЛЬ)
             строка.pack(fill="x", padx=8, pady=1)
 
-            держит = tk.BooleanVar(value=ping.cluster.code in закрытые)
+            играть = (ping.cluster.code == ближний
+                      or ping.cluster.code not in закрытые)
+            держит = tk.BooleanVar(value=играть)
             галка = tk.Checkbutton(
                 строка, text=ping.cluster.name, variable=держит, bg=ПАНЕЛЬ,
                 fg=ТЕКСТ, selectcolor=ФОН, activebackground=ПАНЕЛЬ,
@@ -226,15 +255,24 @@ class Окно:
                      ).pack(side="right")
 
     def _выбор(self) -> set[str]:
+        """Что закрыть: всё, где галка снята. Ближний не закрывается."""
         ближний = self.ближний
         return {code for code, держит in self.галки.items()
-                if держит.get() and code != ближний}
+                if not держит.get() and code != ближний}
 
     def применить(self) -> None:
         if self.занято or not self.pings:
             return
         среди = [p.cluster for p in self.pings]
         выбор = self._выбор()
+        отмечено = len(среди) - len(выбор)
+        if отмечено < blocklist.KEEP_OPEN:
+            self.сказать(
+                f"{plural(отмечено, 'Отмечен', 'Отмечено', 'Отмечено')} "
+                f"{servers(отмечено)}, а надо хотя бы "
+                f"{spelled(blocklist.KEEP_OPEN)} — иначе матч может не "
+                f"найтись вовсе.")
+            return
         беда = blocklist.check(выбор, среди, self.ближний)
         if беда:
             self.сказать(беда)
@@ -262,11 +300,13 @@ class Окно:
             self.сказать(беда)
             return
         if not сколько:
-            self.сказать("Все серверы открыты — закрывать было нечего.")
+            self.сказать("Отмечены все серверы — закрывать нечего, всё "
+                         "открыто.")
             return
         стало = plural(сколько, "закрыт", "закрыто", "закрыто")
-        self.сказать(f"Готово, {стало} {servers(сколько)}. Перезапусти "
-                     f"поиск матча, чтобы игра замерила заново.")
+        self.сказать(f"Готово: играешь только на отмеченных, {стало} "
+                     f"{servers(сколько)}. Перезапусти поиск матча, чтобы "
+                     f"игра замерила заново.")
 
     def снять(self) -> None:
         if self.занято:
@@ -287,8 +327,8 @@ class Окно:
 
     def _снято(self, беда: str) -> None:
         self.занято = False
-        for держит in self.галки.values():
-            держит.set(False)
+        if not беда:
+            self._отметить(True)
         self.сказать(беда if беда else
                      "Всё открыто обратно. Убраны только правила этой "
                      "программы — то, что настраивалось в брандмауэре "
