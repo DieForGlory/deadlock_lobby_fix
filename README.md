@@ -74,8 +74,9 @@ python -m deadlock_lobby_fix block syd tyo --yes  # actually close them
 python -m deadlock_lobby_fix unblock      # open everything back up
 ```
 
-In the window, tick the servers you are willing to play on and press
-«Зафиксировать выбранные» — every server left unticked gets closed. If you
+In the window, tick the servers you are willing to play on and press the
+green «Применить выбранное» button under the list — every server left
+unticked gets closed. If you
 only want a handful, «Снять все» clears the list first (the nearest server
 always stays ticked).
 
@@ -216,8 +217,8 @@ python -m deadlock_lobby_fix block syd tyo --yes  # закрыть на само
 python -m deadlock_lobby_fix unblock      # открыть всё обратно
 ```
 
-В окне отметь серверы, где готов играть, и жми «Зафиксировать выбранные» —
-всё неотмеченное закроется. Если нужно всего несколько, сначала «Снять все»,
+В окне отметь серверы, где готов играть, и жми зелёную кнопку «Применить
+выбранное» под списком — всё неотмеченное закроется. Если нужно всего несколько, сначала «Снять все»,
 потом отметь свои (ближайший отмечен всегда).
 
 `block` без `--yes` — предпросмотр, и не трогает ничего: программа, которая

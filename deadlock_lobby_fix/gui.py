@@ -18,6 +18,8 @@ log = logging.getLogger(__name__)
 ХОРОШО = "#6fbf73"
 ТЕРПИМО = "#d9a441"
 ПЛОХО = "#e0714f"
+ГЛАВНАЯ = "#2f7d3a"
+ГЛАВНАЯ_ПОД_МЫШЬЮ = "#38924a"
 
 ЦВЕТ = {"хорошо": ХОРОШО, "терпимо": ТЕРПИМО,
         "плохо": ПЛОХО, "молчит": ТУСКЛО}
@@ -40,8 +42,8 @@ class Окно:
         self._шапка()
         self._кнопки()
         self._строка_состояния()
+        self._низ()
         self._список()
-        self._подвал()
         self._обновить_состояние()
 
     def _шапка(self) -> None:
@@ -61,13 +63,10 @@ class Окно:
         ряд = tk.Frame(self.root, bg=ФОН)
         ряд.pack(fill="x", padx=16)
         self.кнопка_замера = self._кнопка(ряд, "Замерить пинг", self.замерить)
-        self.кнопка_применить = self._кнопка(ряд, "Зафиксировать выбранные",
-                                             self.применить)
         self.кнопка_снять = self._кнопка(ряд, "Открыть всё обратно",
                                          self.снять)
         self.кнопка_прав = self._кнопка(ряд, "Запросить права",
                                         self.спросить_права)
-        self.кнопка_применить.configure(state="disabled")
 
     def _кнопка(self, где, текст, действие) -> tk.Button:
         кнопка = tk.Button(где, text=текст, command=действие, bg=ПАНЕЛЬ,
@@ -87,12 +86,26 @@ class Окно:
                  "опрашиваются все сразу.")
         self.состояние.pack(fill="x", padx=16, pady=(10, 6))
 
-        ряд = tk.Frame(self.root, bg=ФОН)
-        ряд.pack(fill="x", padx=16, pady=(0, 4))
+    def _низ(self) -> None:
+        """Всё, что под списком. Пакуется до списка, чтобы не обрезалось."""
+        низ = tk.Frame(self.root, bg=ФОН)
+        низ.pack(side="bottom", fill="x")
+
+        ряд = tk.Frame(низ, bg=ФОН)
+        ряд.pack(fill="x", padx=16, pady=(0, 10))
+        self.кнопка_применить = tk.Button(
+            ряд, text="Применить выбранное", command=self.применить,
+            bg=ГЛАВНАЯ, fg="#ffffff", activebackground=ГЛАВНАЯ_ПОД_МЫШЬЮ,
+            activeforeground="#ffffff", relief="flat", padx=20, pady=8,
+            font=("Segoe UI", 10, "bold"), cursor="hand2", borderwidth=0,
+            disabledforeground="#a9c9ad")
+        self.кнопка_применить.pack(side="right")
         self.кнопки_отметок = [
             self._ссылка(ряд, "Отметить все", lambda: self._отметить(True)),
             self._ссылка(ряд, "Снять все", lambda: self._отметить(False)),
         ]
+
+        self._подвал(низ)
 
     def _ссылка(self, где, текст, действие) -> tk.Button:
         """Мелкая кнопка-ссылка для быстрых отметок."""
@@ -144,7 +157,7 @@ class Окно:
     def _колесо(self, event) -> None:
         self.холст.yview_scroll(int(-event.delta / 120), "units")
 
-    def _подвал(self) -> None:
+    def _подвал(self, где) -> None:
         for текст in (
             "Закрытие делается правилами брандмауэра Windows — для них "
             "нужны права администратора. Сама игра при этом не трогается: "
@@ -155,13 +168,13 @@ class Окно:
             "поломка. Ближайший сервер закрыть нельзя, и хотя бы пять "
             "должны остаться открытыми, иначе матч не найдётся вовсе.",
             "Список серверов Valve меняет. Новый датацентр будет открыт, "
-            "пока не замеришь и не зафиксируешь выбор заново.",
+            "пока не замеришь и не применишь выбор заново.",
         ):
-            tk.Label(self.root, text=текст, bg=ФОН, fg=ТУСКЛО,
+            tk.Label(где, text=текст, bg=ФОН, fg=ТУСКЛО,
                      justify="left", anchor="w", wraplength=640,
                      font=("Segoe UI", 8)).pack(fill="x", padx=16,
                                                 pady=(0, 4))
-        tk.Frame(self.root, bg=ФОН, height=8).pack()
+        tk.Frame(где, bg=ФОН, height=8).pack()
 
     def сказать(self, текст: str) -> None:
         self.состояние.configure(text=текст)
@@ -217,9 +230,8 @@ class Окно:
             return
         self.сказать(f"Ближе всего {ближний.cluster.name} — "
                      f"{ближний.ms:.0f} мс. Отметь, где хочешь играть, "
-                     f"и жми «Зафиксировать выбранные» — остальные "
+                     f"и жми «Применить выбранное» внизу — остальные "
                      f"закроются.")
-        self.кнопка_применить.configure(state="normal")
         for кнопка in self.кнопки_отметок:
             кнопка.configure(state="normal")
 
@@ -261,7 +273,11 @@ class Окно:
                 if not держит.get() and code != ближний}
 
     def применить(self) -> None:
-        if self.занято or not self.pings:
+        if self.занято:
+            return
+        if not self.pings:
+            self.сказать("Сначала жми «Замерить пинг» — без замера не "
+                         "видно, какие серверы есть.")
             return
         среди = [p.cluster for p in self.pings]
         выбор = self._выбор()
